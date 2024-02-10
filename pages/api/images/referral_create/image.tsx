@@ -12,7 +12,7 @@ let fontData = fs.readFileSync(fontPath)
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
-        const CampaignId = req.query['id']
+        const CampaignId = req.query['campaign_id']
         // const fid = parseInt(req.query['fid']?.toString() || '')
         if (!CampaignId) {
             return res.status(400).send('Missing Campaign ID');

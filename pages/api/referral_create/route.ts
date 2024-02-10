@@ -48,15 +48,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 fid = req.body?.untrustedData?.fid || 0;
             }
 
-            let Campaign: Campaign | null = await kv.hgetall(`campaign:${campaignId}`);
-            if (!Campaign) {
+            let campaign: Campaign | null = await kv.hgetall(`campaign:${campaignId}`);
+            if (!campaign) {
                 return res.status(400).send('Could not find Campaign ID');
             }
-            const imageUrl = `${process.env['HOST']}/api/images/referral_create?id=${Campaign.id}&date=${Date.now()}${ fid > 0 ? `&fid=${fid}` : '' }`;
+            const imageUrl = `${process.env['HOST']}/api/images/referral_create?campaign_id=${campaign.id}&date=${Date.now()}${ fid > 0 ? `&fid=${fid}` : '' }`;
 
             if (fid <= 0 || buttonId <= 0) {
                 // Return an HTML response
-                let create_referral_url = `${process.env['HOST']}/api/referral_create?id=${Campaign.id}`
+                let create_referral_url = `${process.env['HOST']}/api/referral_create?campaign_id=${campaign.id}`
                 res.setHeader('Content-Type', 'text/html');
                 res.status(200).send(`
                 <!DOCTYPE html>
@@ -75,6 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     </body>
                 </html>
                 `);
+                return;
             }
 
             var referral: Referral | null = await kv.hgetall(`referral:${campaignId}-${fid}`)

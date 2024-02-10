@@ -2,58 +2,7 @@ import {kv} from "@vercel/kv";
 import {Referral, Campaign, Currency} from "@/app/types";
 import Head from "next/head";
 import {Metadata, ResolvingMetadata} from "next";
-
-async function getReferral(id: string): Promise<Referral> {
-    let nullReferral = {
-        id: "",
-        created_at: 0,
-        campaign_id: "",
-        referrer_fid: 0,
-    };
-
-    try {
-        let Referral: Referral | null = await kv.hgetall(`referral:${id}`);
-
-        if (!Referral) {
-            return nullReferral;
-        }
-
-        return Referral;
-    } catch (error) {
-        console.error(error);
-        return nullReferral;
-    }
-}
-
-async function getCampaign(id: string): Promise<Campaign> {
-    let nullCampaign = {
-        id: "",
-        created_at: 0,
-        title: "",
-        image_url: "",
-        button_title: "",
-        redirect_url: "",
-        max_referrals_per_referrer: 0,
-        current_pool_size: 0,
-        cpc: 0,
-        denomination_currency: "USDC" as Currency,
-        max_referrers: 0,
-    };
-
-    try {
-        let campaign: Campaign | null = await kv.hgetall(`campaign:${id}`);
-
-        if (!campaign) {
-            return nullCampaign;
-        }
-
-        return campaign;
-    } catch (error) {
-        console.error(error);
-        return nullCampaign;
-    }
-}
-
+import {getReferral, getCampaign} from "@/app/actions";
 
 
 export default async function Page({params}: { params: {id: string}}) {

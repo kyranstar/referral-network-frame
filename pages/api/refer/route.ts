@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import {Campaign, Campaign_EXPIRY} from "@/app/types";
 import {kv} from "@vercel/kv";
 import {getSSLHubRpcClient, Message} from "@farcaster/hub-nodejs";
-import {redirectToReferral} from "@/app/actions";
+import {redirectToReferral, getReferral, getCampaign, clickReferral} from "@/app/actions";
 
 const HUB_URL = process.env['HUB_URL']
 const client = HUB_URL ? getSSLHubRpcClient(HUB_URL) : undefined;
@@ -12,11 +12,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Process the vote
         // For example, let's assume you receive an option in the body
         try {
-            const campaignId = req.query['id']
-            const results = req.query['results'] === 'true'
-            let voted = req.query['voted'] === 'true'
-            if (!campaignId) {
-                return res.status(400).send('Missing Campaign ID');
+            const referralId = req.query['referral_id']
+            if (!referralId) {
+                return res.status(400).send('Missing Referral ID');
+            }
+            if (typeof referralId !== 'string') {
+                return res.status(400).send('Malformmated Referral ID');
             }
 
             let validatedMessage : Message | undefined = undefined;
@@ -46,39 +47,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 buttonId = req.body?.untrustedData?.buttonIndex || 0;
                 fid = req.body?.untrustedData?.fid || 0;
             }
+            const referral = await getReferral(referralId);
+            const campaign = await getCampaign(referral.campaign_id)
+
+            const imageUrl = `${process.env['HOST']}/api/images/refer?id=${referralId}&date=${Date.now()}${ fid > 0 ? `&fid=${fid}` : '' }`;
 
             // Clicked create Campaign
-            if ((results || voted) && buttonId === 2) {
-                return redirectToReferral();
+            if (fid <= 0 || buttonId <= 0) {
+                res.setHeader('Content-Type', 'text/html');
+                res.status(200).send(`
+        <!DOCTYPE html>
+        <html>
+            <head>
+            <title>Vote Recorded</title>
+            <meta property="og:title" content="Vote Recorded">
+            <meta property="og:image" content="${imageUrl}">
+            <meta name="fc:frame" content="vNext">
+            <meta name="fc:frame:image" content="${imageUrl}">
+            <meta name="fc:frame:post_url" content="${process.env['HOST']}/api/vote?id=${campaign.id}">
+            <meta name="fc:frame:button:1" content="${campaign.button_title}">
+            <meta name="fc:frame:button:2" content="Visit Link">
+            <meta name="fc:frame:button:2:action" content="link">
+            <meta name="fc:frame:button:2:target" content="${campaign.redirect_url}">
+            </head>
+            <body>
+            <p>Referral view</p>
+            </body>
+        </html>
+        `);
+        return;
             }
 
-            const voteExists = await kv.sismember(`campaign:${campaignId}:voted`, fid)
-            voted = voted || !!voteExists
+            await clickReferral(referral, fid);
 
-            if (fid > 0 && buttonId > 0 && buttonId < 5 && !results && !voted) {
-                let multi = kv.multi();
-                multi.hincrby(`campaign:${campaignId}`, `votes${buttonId}`, 1);
-                multi.sadd(`campaign:${campaignId}:voted`, fid);
-                multi.expire(`campaign:${campaignId}`, Campaign_EXPIRY);
-                multi.expire(`campaign:${campaignId}:voted`, Campaign_EXPIRY);
-                await multi.exec();
-            }
-
-            let Campaign: Campaign | null = await kv.hgetall(`campaign:${campaignId}`);
-
-            if (!Campaign) {
-                return res.status(400).send('Missing Campaign ID');
-            }
-            const imageUrl = `${process.env['HOST']}/api/image?id=${Campaign.id}&results=${results ? 'false': 'true'}&date=${Date.now()}${ fid > 0 ? `&fid=${fid}` : '' }`;
-            let button1Text = "View Results";
-            if (!voted && !results) {
-                button1Text = "Back"
-            } else if (voted && !results) {
-                button1Text = "Already Voted"
-            } else if (voted && results) {
-                button1Text = "View Results"
-            }
-
+            
             // Return an HTML response
             res.setHeader('Content-Type', 'text/html');
             res.status(200).send(`
@@ -90,13 +92,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <meta property="og:image" content="${imageUrl}">
           <meta name="fc:frame" content="vNext">
           <meta name="fc:frame:image" content="${imageUrl}">
-          <meta name="fc:frame:post_url" content="${process.env['HOST']}/api/vote?id=${Campaign.id}&voted=true&results=${results ? 'false' : 'true'}">
-          <meta name="fc:frame:button:1" content="${button1Text}">
-          <meta name="fc:frame:button:2" content="Create your Campaign">
-          <meta name="fc:frame:button:2:action" content="post_redirect">
+          <meta name="fc:frame:post_url" content="${process.env['HOST']}/api/vote">
+          <meta name="fc:frame:button:1" content="${campaign.button_title}">
+          <meta name="fc:frame:button:2" content="Visit Link">
+          <meta name="fc:frame:button:2:action" content="link">
+          <meta name="fc:frame:button:2:target" content="${campaign.redirect_url}">
         </head>
         <body>
-          <p>${ results || voted ? `You have already voted. You clicked ${buttonId}` : `Your vote for ${buttonId} has been recorded for fid ${fid}.` }</p>
+          <p>Referral clicked!</p>
         </body>
       </html>
     `);

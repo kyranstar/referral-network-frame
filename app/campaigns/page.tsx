@@ -1,31 +1,9 @@
 import {kv} from "@vercel/kv";
 import {Campaign} from "@/app/types";
 import Link from "next/link";
+import {getCampaigns} from "@/app/actions";
 
-const SEVEN_DAYS_IN_MS = 1000 * 60 * 60 * 24 * 7;
 
-async function getCampaigns() {
-    try {
-        let CampaignIds = await kv.zrange("campaigns_by_date", Date.now(), Date.now() - SEVEN_DAYS_IN_MS, {byScore: true, rev: true, count: 100, offset: 0});
-
-        if (!CampaignIds.length) {
-            return [];
-        }
-
-        let multi = kv.multi();
-        CampaignIds.forEach((id) => {
-            multi.hgetall(`campaign:${id}`);
-        });
-
-        let items: Campaign[] = await multi.exec();
-        return items.map((item) => {
-            return {...item};
-        });
-    } catch (error) {
-        console.error(error);
-        return [];
-    }
-}
 
 export default async function Page() {
     const Campaigns = await getCampaigns();
