@@ -1,15 +1,26 @@
-export type Poll = {
+export type Currency = "ETH" | "USDC"
+
+export type Campaign = {
   id: string;
-  title: string;
-  option1: string;
-  option2: string;
-  option3: string;
-  option4: string;
-  votes1: number;
-  votes2: number;
-  votes3: number;
-  votes4: number;
   created_at: number;
+  title: string;
+  image_url: string;
+  button_title: string;
+  redirect_url: string;
+  max_referrals_per_referrer: number;
+  current_pool_size: number;
+  cpc: number;
+  denomination_currency: Currency;
+  max_referrers: number;
 };
 
-export const POLL_EXPIRY = 60 * 60 * 24 * 180; // Expire polls after 3 months
+export const Campaign_EXPIRY = 60 * 60 * 24 * 180; // Expire Campaigns after 3 months
+
+export type Referral = {
+  id: string;
+  created_at: number;
+  campaign_id: string;
+  referrer_fid: number;
+};
+
+export const REFERRAL_EXPIRY = 60 * 60 * 24 * 180; // Expire Campaigns after 3 months

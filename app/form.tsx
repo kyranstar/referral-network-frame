@@ -2,50 +2,51 @@
 
 import clsx from "clsx";
 import {useOptimistic, useRef, useState, useTransition} from "react";
-import {redirectToPolls, savePoll, votePoll} from "./actions";
+import {redirectToCampaigns, saveCampaign, voteCampaign, saveReferral} from "./actions";
 import { v4 as uuidv4 } from "uuid";
-import {Poll} from "./types";
+import {Campaign, Referral, Currency} from "./types";
 import {useRouter, useSearchParams} from "next/navigation";
 
-type PollState = {
-  newPoll: Poll;
-  updatedPoll?: Poll;
+type CampaignState = {
+  newCampaign: Campaign;
+  updatedCampaign?: Campaign;
   pending: boolean;
-  voted?: boolean;
 };
 
 
-export function PollCreateForm() {
+export function CampaignCreateForm() {
   let formRef = useRef<HTMLFormElement>(null);
   let [state, mutate] = useOptimistic(
       { pending: false },
-      function createReducer(state, newPoll: PollState) {
-        if (newPoll.newPoll) {
+      function createReducer(state, newCampaign: CampaignState) {
+        if (newCampaign.newCampaign) {
           return {
-            pending: newPoll.pending,
+            pending: newCampaign.pending,
           };
         } else {
           return {
-            pending: newPoll.pending,
+            pending: newCampaign.pending,
           };
         }
       },
   );
 
-  let pollStub = {
+  let CampaignStub = {
     id: uuidv4(),
     created_at: new Date().getTime(),
     title: "",
-    option1: "",
-    option2: "",
-    option3: "",
-    option4: "",
-    votes1: 0,
-    votes2: 0,
-    votes3: 0,
-    votes4: 0,
+    image_url: "",
+    button_title: "",
+    redirect_url: "",
+    max_referrals_per_referrer: 0,
+    total_views: 0,
+    referrals_ids: [],
+    max_referrers: -1,
+    cpc: 0.0001,
+    denomination_currency: "USDC" as Currency,
+    current_pool_size: 0,
   };
-  let saveWithNewPoll = savePoll.bind(null, pollStub);
+  let saveWithNewCampaign = saveCampaign.bind(null, CampaignStub);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let [isPending, startTransition] = useTransition();
 
@@ -55,36 +56,36 @@ export function PollCreateForm() {
           <form
               className="relative my-8"
               ref={formRef}
-              action={saveWithNewPoll}
+              action={saveWithNewCampaign}
               onSubmit={(event) => {
                 event.preventDefault();
                 let formData = new FormData(event.currentTarget);
-                let newPoll = {
-                  ...pollStub,
+                let newCampaign = {
+                  ...CampaignStub,
                   title: formData.get("title") as string,
-                  option1: formData.get("option1") as string,
-                  option2: formData.get("option2") as string,
-                  option3: formData.get("option3") as string,
-                  option4: formData.get("option4") as string,
-                  votes1: 0,
-                  votes2: 0,
-                  votes3: 0,
-                  votes4: 0,
+                  image_url: formData.get("image_url") as string,
+                  button_title: formData.get("button_title") as string,
+                  redirect_url: formData.get("redirect_url") as string,
+                  max_referrals_per_referrer: parseInt(formData.get("max_referrals_per_referrer") as string, 10),
+                  max_referrers: parseInt(formData.get("max_referrers") as string, 10),
+                  cpc: parseFloat(formData.get("cpc") as string),
+                  denomination_currency: formData.get("denomination_currency") as Currency,   
+                  current_pool_size: 0,
                 };
 
                 formRef.current?.reset();
                 startTransition(async () => {
                   mutate({
-                    newPoll,
+                    newCampaign,
                     pending: true,
                   });
 
-                  await savePoll(newPoll, formData);
+                  await saveCampaign(newCampaign);
                 });
               }}
           >
             <input
-                aria-label="Poll Title"
+                aria-label="Campaign Title"
                 className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
                 maxLength={150}
                 placeholder="Title..."
@@ -93,38 +94,67 @@ export function PollCreateForm() {
                 name="title"
             />
             <input
-                aria-label="Option 1"
+                aria-label="Image URL"
                 className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
                 maxLength={150}
-                placeholder="Option 1"
+                placeholder="..."
                 required
                 type="text"
-                name="option1"
+                name="image_url"
             />
             <input
-                aria-label="Option 2"
+                aria-label="Button Display Phrase"
                 className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
                 maxLength={150}
-                placeholder="Option 2"
+                placeholder="Check it out!"
                 required
                 type="text"
-                name="option2"
+                name="button_title"
             />
             <input
-                aria-label="Option 3"
+                aria-label="Redirect URL"
                 className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
                 maxLength={150}
-                placeholder="Option 3 (optional)"
+                placeholder="..."
+                required
                 type="text"
-                name="option3"
+                name="redirect_url"
             />
             <input
-                aria-label="Option 4"
+                aria-label="Cost Per Click"
                 className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
                 maxLength={150}
-                placeholder="Option 4 (optional)"
+                placeholder="..."
+                required
                 type="text"
-                name="option4"
+                name="cpc"
+            />
+            <input
+                aria-label="Denomination Currency"
+                className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
+                maxLength={150}
+                placeholder="..."
+                required
+                type="text"
+                name="denomination_currency"
+            />
+            <input
+                aria-label="Max Referrals Per Referrer (Negative is uncapped)"
+                className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
+                maxLength={150}
+                placeholder="-1"
+                required
+                type="text"
+                name="max_referrals_per_referrer"
+            />
+            <input
+                aria-label="Max Referrers (Negative is uncapped)"
+                className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
+                maxLength={150}
+                placeholder="-1"
+                required
+                type="text"
+                name="max_referrers"
             />
               <div className={"pt-2 flex justify-end"}>
                   <button
@@ -146,44 +176,125 @@ export function PollCreateForm() {
   );
 }
 
-function PollOptions({poll, onChange} : {poll: Poll, onChange: (index: number) => void}) {
-    return (
-        <div className="mb-4 text-left">
-            {[poll.option1, poll.option2, poll.option3, poll.option4].filter(e => e !== "").map((option, index) => (
-                <label key={index} className="block">
-                    <input
-                        type="radio"
-                        name="poll"
-                        value={option}
-                        onChange={() => onChange(index + 1)}
-                        className="mr-2"
-                    />
-                    {option}
-                </label>
-            ))}
-        </div>
-    );
-}
-
-function PollResults({poll} : {poll: Poll}) {
+function CampaignResults({Campaign} : {Campaign: Campaign}) {
     return (
         <div className="mb-4">
-            <img src={`/api/image?id=${poll.id}&results=true&date=${Date.now()}`} alt='poll results'/>
+            <img src={`/api/image?id=${Campaign.id}&results=true&date=${Date.now()}`} alt='Campaign results'/>
         </div>
     );
 }
 
-export function PollVoteForm({poll, viewResults}: { poll: Poll, viewResults?: boolean }) {
+type ReferralState = {
+    newReferral: Referral;
+    updatedReferral?: Referral;
+    pending: boolean;
+  };
+  
+  
+  export function ReferralCreateForm() {
+    let formRef = useRef<HTMLFormElement>(null);
+    let [state, mutate] = useOptimistic(
+        { pending: false },
+        function createReducer(state, newReferral: ReferralState) {
+          if (newReferral.newReferral) {
+            return {
+              pending: newReferral.pending,
+            };
+          } else {
+            return {
+              pending: newReferral.pending,
+            };
+          }
+        },
+    );
+  
+    let referralStub = {
+      id: uuidv4(),
+      created_at: new Date().getTime(),
+      campaign_id: "",
+      referrer_fid: "",
+      total_referrals: 0,
+    };
+    let saveWithNewReferral = saveReferral.bind(null, referralStub);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let [isPending, startTransition] = useTransition();
+  
+    return (
+        <>
+          <div className="mx-8 w-full">
+            <form
+                className="relative my-8"
+                ref={formRef}
+                action={saveWithNewReferral}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  let formData = new FormData(event.currentTarget);
+                  let newReferral = {
+                    ...referralStub,
+                    campaign_id: "", // TODO get this from form creation parameters
+                    referrer_fid: formData.get("referrer_fid") as string,
+                  };
+  
+                  formRef.current?.reset();
+                  startTransition(async () => {
+                    mutate({
+                      newReferral,
+                      pending: true,
+                    });
+  
+                    await saveReferral(newReferral, formData);
+                  });
+                }}
+            >
+              <input
+                  aria-label="What's your FID?"
+                  className="pl-3 pr-28 py-3 mt-1 text-lg block w-full border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring focus:ring-blue-300"
+                  maxLength={150}
+                  placeholder="..."
+                  required
+                  type="text"
+                  name="referrer_fid"
+              />
+                <div className={"pt-2 flex justify-end"}>
+                    <button
+                        className={clsx(
+                            "flex items-center p-1 justify-center px-4 h-10 text-lg border bg-blue-500 text-white rounded-md w-24 focus:outline-none focus:ring focus:ring-blue-300 hover:bg-blue-700 focus:bg-blue-700",
+                            state.pending && "bg-gray-700 cursor-not-allowed",
+                        )}
+                        type="submit"
+                        disabled={state.pending}
+                    >
+                        Create
+                    </button>
+                </div>
+            </form>
+          </div>
+            <div className="w-full">
+            </div>
+        </>
+    );
+  }
+
+  function ReferralResults({Referral} : {Referral: Referral}) {
+      return (
+          <div className="mb-4">
+              <img src={`/api/image?id=${Referral.id}&results=true&date=${Date.now()}`} alt='Referral results'/>
+          </div>
+      );
+  }
+
+
+export function CampaignVoteForm({Campaign, viewResults}: { Campaign: Campaign, viewResults?: boolean }) {
     const [selectedOption, setSelectedOption] = useState(-1);
     const router = useRouter();
     const searchParams = useSearchParams();
     viewResults = true;     // Only allow voting via the api
     let formRef = useRef<HTMLFormElement>(null);
-    let voteOnPoll = votePoll.bind(null, poll);
+    let voteOnCampaign = voteCampaign.bind(null, Campaign);
     let [isPending, startTransition] = useTransition();
     let [state, mutate] = useOptimistic(
         { showResults: viewResults },
-        function createReducer({showResults}, state: PollState) {
+        function createReducer({showResults}, state: CampaignState) {
             if (state.voted || viewResults) {
                 return {
                     showResults: true,
@@ -202,36 +313,36 @@ export function PollVoteForm({poll, viewResults}: { poll: Poll, viewResults?: bo
 
     return (
         <div className="max-w-sm rounded overflow-hidden shadow-lg p-4 m-4">
-            <div className="font-bold text-xl mb-2">{poll.title}</div>
+            <div className="font-bold text-xl mb-2">{Campaign.title}</div>
             <form
                 className="relative my-8"
                 ref={formRef}
-                action={ () => voteOnPoll(selectedOption)}
+                action={ () => voteOnCampaign(selectedOption)}
                 onSubmit={(event) => {
                     event.preventDefault();
                     let formData = new FormData(event.currentTarget);
-                    let newPoll = {
-                        ...poll,
+                    let newCampaign = {
+                        ...Campaign,
                     };
 
                     // @ts-ignore
-                    newPoll[`votes${selectedOption}`] += 1;
+                    newCampaign[`votes${selectedOption}`] += 1;
 
 
                     formRef.current?.reset();
                     startTransition(async () => {
                         mutate({
-                            newPoll,
+                            newCampaign,
                             pending: false,
                             voted: true,
                         });
 
-                        await redirectToPolls();
-                        // await votePoll(newPoll, selectedOption);
+                        await redirectToCampaigns();
+                        // await voteCampaign(newCampaign, selectedOption);
                     });
                 }}
             >
-                {state.showResults ? <PollResults poll={poll}/> : <PollOptions poll={poll} onChange={handleVote}/>}
+                {state.showResults ? <CampaignResults Campaign={Campaign}/> : <CampaignOptions Campaign={Campaign} onChange={handleVote}/>}
                 {state.showResults ? <button
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
                         type="submit"

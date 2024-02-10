@@ -2,37 +2,48 @@
 
 import { kv } from "@vercel/kv";
 import { revalidatePath } from "next/cache";
-import {Poll, POLL_EXPIRY} from "./types";
+import {Campaign, Campaign_EXPIRY, REFERRAL_EXPIRY, Referral} from "./types";
 import {redirect} from "next/navigation";
 
-export async function savePoll(poll: Poll, formData: FormData) {
-  let newPoll = {
-    ...poll,
-    created_at: Date.now(),
-    title: formData.get("title") as string,
-    option1: formData.get("option1") as string,
-    option2: formData.get("option2") as string,
-    option3: formData.get("option3") as string,
-    option4: formData.get("option4") as string,
-  }
-  await kv.hset(`poll:${poll.id}`, poll);
-  await kv.expire(`poll:${poll.id}`, POLL_EXPIRY);
-  await kv.zadd("polls_by_date", {
-    score: Number(poll.created_at),
-    member: newPoll.id,
+export async function saveCampaign(campaign: Campaign) {
+  await kv.hset(`campaign:${campaign.id}`, campaign);
+  await kv.expire(`campaign:${campaign.id}`, Campaign_EXPIRY);
+  await kv.zadd("campaigns_by_date", {
+    score: Number(campaign.created_at),
+    member: campaign.id,
   });
 
-  revalidatePath("/polls");
-  redirect(`/polls/${poll.id}`);
+  revalidatePath("/campaigns");
+  redirect(`/campaigns/${campaign.id}`);
 }
 
-export async function votePoll(poll: Poll, optionIndex: number) {
-  await kv.hincrby(`poll:${poll.id}`, `votes${optionIndex}`, 1);
+export async function clickReferral(referral: Referral, fid: string) {
+  await kv.sadd(`campaign:${referral.campaign_id}:clicked`, fid);
 
-  revalidatePath(`/polls/${poll.id}`);
-  redirect(`/polls/${poll.id}?results=true`);
+  let campaign: Campaign | null = await kv.hgetall(`campaign:${referral.campaign_id}`);
+  if (!campaign) {
+    throw new Error("Campaign not found");
+  }
+  redirect(campaign.redirect_url);
 }
 
-export async function redirectToPolls() {
-  redirect("/polls");
+export async function redirectToCampaigns() {
+  redirect("/campaigns");
+}
+
+export async function saveReferral(referral: Referral) {
+  await kv.hset(`referral:${referral.id}`, referral);
+  await kv.expire(`referral:${referral.id}`, REFERRAL_EXPIRY);
+  await kv.sadd(`campaign:${referral.campaign_id}:referrals`, referral.id);
+
+  revalidatePath("/referrals");
+  redirect(`/referrals/${referral.id}`);
+}
+
+
+export async function redirectToReferrals() {
+  redirect("/referrals");
+}
+export async function redirectToReferral(referralId: string) {
+  redirect(`/referrals/${referralId}`);
 }

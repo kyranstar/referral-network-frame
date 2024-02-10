@@ -1,35 +1,25 @@
 import {kv} from "@vercel/kv";
-import {Poll} from "@/app/types";
-import {PollVoteForm} from "@/app/form";
+import {Campaign} from "@/app/types";
+import {CampaignVoteForm} from "@/app/form";
 import Head from "next/head";
 import {Metadata, ResolvingMetadata} from "next";
+import {redirect} from "next/navigation";
 
-async function getPoll(id: string): Promise<Poll> {
-    let nullPoll = {
-        id: "",
-        title: "No poll found",
-        option1: "",
-        option2: "",
-        option3: "",
-        option4: "",
-        votes1: 0,
-        votes2: 0,
-        votes3: 0,
-        votes4: 0,
-        created_at: 0,
-    };
+// TODO change to a normal webpage that displays the campaign and allows creating referrals
+
+async function getCampaign(id: string): Promise<Campaign> {
 
     try {
-        let poll: Poll | null = await kv.hgetall(`poll:${id}`);
+        let Campaign: Campaign | null = await kv.hgetall(`campaign:${id}`);
 
-        if (!poll) {
-            return nullPoll;
+        if (!Campaign) {
+            throw new Error("Campaign not found");
         }
 
-        return poll;
+        return Campaign;
     } catch (error) {
         console.error(error);
-        return nullPoll;
+        throw error;
     }
 }
 
@@ -44,22 +34,22 @@ export async function generateMetadata(
 ): Promise<Metadata> {
     // read route params
     const id = params.id
-    const poll = await getPoll(id)
+    const Campaign = await getCampaign(id)
 
     const fcMetadata: Record<string, string> = {
         "fc:frame": "vNext",
         "fc:frame:post_url": `${process.env['HOST']}/api/vote?id=${id}`,
         "fc:frame:image": `${process.env['HOST']}/api/image?id=${id}`,
     };
-    [poll.option1, poll.option2, poll.option3, poll.option4].filter(o => o !== "").map((option, index) => {
+    [Campaign.option1, Campaign.option2, Campaign.option3, Campaign.option4].filter(o => o !== "").map((option, index) => {
         fcMetadata[`fc:frame:button:${index + 1}`] = option;
     })
 
 
     return {
-        title: poll.title,
+        title: Campaign.title,
         openGraph: {
-            title: poll.title,
+            title: Campaign.title,
             images: [`/api/image?id=${id}`],
         },
         other: {
@@ -68,27 +58,25 @@ export async function generateMetadata(
         metadataBase: new URL(process.env['HOST'] || '')
     }
 }
-function getMeta(
-    poll: Poll
-) {
-    // This didn't work for some reason
-    return (
-        <Head>
-            <meta property="og:image" content="" key="test"></meta>
-            <meta property="og:title" content="My page title" key="title"/>
-        </Head>
-    );
-}
 
 
 export default async function Page({params}: { params: {id: string}}) {
-    const poll = await getPoll(params.id);
+    const Campaign = await getCampaign(params.id);
 
     return(
         <>
             <div className="flex flex-col items-center justify-center min-h-screen py-2">
                 <main className="flex flex-col items-center justify-center flex-1 px-4 sm:px-20 text-center">
-                    <PollVoteForm poll={poll}/>
+                    <h1 className="text-lg sm:text-2xl font-bold mb-2">
+                        Campaign 
+                        {JSON.stringify(Campaign)}
+                    </h1>
+                    <button 
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                        onClick={() => {redirect(`/referrals/create_referral/${params.id}`)}}
+                        >
+                        Create Referral
+                    </button>
                 </main>
             </div>
         </>

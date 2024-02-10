@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import sharp from 'sharp';
-import {Poll} from "@/app/types";
+import {Campaign} from "@/app/types";
 import {kv} from "@vercel/kv";
 import satori from "satori";
 import { join } from 'path';
@@ -11,37 +11,37 @@ let fontData = fs.readFileSync(fontPath)
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
-        const pollId = req.query['id']
+        const CampaignId = req.query['id']
         // const fid = parseInt(req.query['fid']?.toString() || '')
-        if (!pollId) {
-            return res.status(400).send('Missing poll ID');
+        if (!CampaignId) {
+            return res.status(400).send('Missing Campaign ID');
         }
 
-        let poll: Poll | null = await kv.hgetall(`poll:${pollId}`);
+        let Campaign: Campaign | null = await kv.hgetall(`campaign:${CampaignId}`);
 
 
-        if (!poll) {
-            return res.status(400).send('Missing poll ID');
+        if (!Campaign) {
+            return res.status(400).send('Missing Campaign ID');
         }
 
         const showResults = req.query['results'] === 'true'
         // let votedOption: number | null = null
         // if (showResults && fid > 0) {
-        //     votedOption = await kv.hget(`poll:${pollId}:votes`, `${fid}`) as number
+        //     votedOption = await kv.hget(`campaign:${CampaignId}:votes`, `${fid}`) as number
         // }
 
-        const pollOptions = [poll.option1, poll.option2, poll.option3, poll.option4]
+        const CampaignOptions = [Campaign.option1, Campaign.option2, Campaign.option3, Campaign.option4]
             .filter((option) => option !== '');
-        const totalVotes = pollOptions
+        const totalVotes = CampaignOptions
             // @ts-ignore
-            .map((option, index) => parseInt(poll[`votes${index+1}`]))
+            .map((option, index) => parseInt(Campaign[`votes${index+1}`]))
             .reduce((a, b) => a + b, 0);
-        const pollData = {
-            question: showResults ? `Results for ${poll.title}` : poll.title,
-            options: pollOptions
+        const CampaignData = {
+            question: showResults ? `Results for ${Campaign.title}` : Campaign.title,
+            options: CampaignOptions
                 .map((option, index) => {
                     // @ts-ignore
-                    const votes = poll[`votes${index+1}`]
+                    const votes = Campaign[`votes${index+1}`]
                     const percentOfTotal = totalVotes ? Math.round(votes / totalVotes * 100) : 0;
                     let text = showResults ? `${percentOfTotal}%: ${option} (${votes} votes)` : `${index + 1}. ${option}`
                     return { option, votes, text, percentOfTotal }
@@ -65,9 +65,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     flexDirection: 'column',
                     padding: 20,
                 }}>
-                    <h2 style={{textAlign: 'center', color: 'lightgray'}}>{poll.title}</h2>
+                    <h2 style={{textAlign: 'center', color: 'lightgray'}}>{Campaign.title}</h2>
                     {
-                        pollData.options.map((opt, index) => {
+                        CampaignData.options.map((opt, index) => {
                             return (
                                 <div style={{
                                     backgroundColor:  showResults ? '#007bff' : '',

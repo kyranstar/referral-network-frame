@@ -1,8 +1,8 @@
-import {CampaignCreateForm} from "./form";
+import {ReferralCreateForm} from "../../../form"
 
 export let metadata = {
-  title: "Farcaster Campaigns",
-  description: "Campaign example for farcaster",
+  title: "Farcaster Referral Campaigns",
+  description: "Referral campaigns for farcaster",
 };
 
 function VercelLogo(props: React.SVGProps<SVGSVGElement>) {
@@ -37,10 +37,10 @@ export default async function Page() {
           Farcaster Referral Campaigns
         </h1>
         <h2 className="text-md sm:text-xl mx-4">
-          Create a new campaign to share your content
+          Create a new Referral
         </h2>
         <div className="flex flex-wrap items-center justify-around max-w-4xl my-8 sm:w-full bg-white rounded-md shadow-xl h-full border border-gray-100">
-          <CampaignCreateForm />
+          <ReferralCreateForm />
         </div>
       </main>
     </div>
