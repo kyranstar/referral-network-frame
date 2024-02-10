@@ -1,8 +1,8 @@
 import {getCampaign} from "@/app/actions";
 import {ReferralCreateButton} from "@/app/form";
 
-export default async function Page({campaign_id}: {campaign_id: string}) {
-    const Campaign = await getCampaign(campaign_id);
+export default async function Page({params}: { params: {id: string}}) {
+    const Campaign = await getCampaign(params.id);
 
     return(
         <>
@@ -13,7 +13,7 @@ export default async function Page({campaign_id}: {campaign_id: string}) {
                     </h1>
                     <p className="text-md sm:text-xl mx-4">{JSON.stringify(Campaign)}</p>
                     <p> Share this link as a frame for others to create referral campaigns:
-                        {`${process.env['HOST']}/api/referral_create/?id=${campaign_id}`}
+                        {`${process.env['HOST']}/api/referral_create/?id=${params.id}`}
                     </p>
                 </main>
             </div>
