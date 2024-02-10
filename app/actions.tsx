@@ -107,7 +107,6 @@ export async function getCampaign(id: string): Promise<Campaign> {
       current_pool_size: 0,
       cpc: 0,
       denomination_currency: "USDC" as Currency,
-      max_referrers: 0,
   };
 
   try {

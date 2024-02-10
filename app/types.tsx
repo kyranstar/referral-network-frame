@@ -11,7 +11,6 @@ export type Campaign = {
   current_pool_size: number;
   cpc: number;
   denomination_currency: Currency;
-  max_referrers: number;
 };
 
 export const Campaign_EXPIRY = 60 * 60 * 24 * 180; // Expire Campaigns after 3 months

@@ -1,12 +1,8 @@
-import {kv} from "@vercel/kv";
-import {Campaign} from "@/app/types";
-import Head from "next/head";
-import {Metadata, ResolvingMetadata} from "next";
-import {redirect} from "next/navigation";
 import {getCampaign} from "@/app/actions";
+import {ReferralCreateButton} from "@/app/form";
 
-export default async function Page({params}: { params: {id: string}}) {
-    const Campaign = await getCampaign(params.id);
+export default async function Page({campaign_id, referrer_fid}: {campaign_id: string, referrer_fid: number}) {
+    const Campaign = await getCampaign(campaign_id);
 
     return(
         <>
@@ -14,14 +10,9 @@ export default async function Page({params}: { params: {id: string}}) {
                 <main className="flex flex-col items-center justify-center flex-1 px-4 sm:px-20 text-center">
                     <h1 className="text-lg sm:text-2xl font-bold mb-2">
                         Campaign 
-                        {JSON.stringify(Campaign)}
                     </h1>
-                    <button 
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                        onClick={() => {redirect(`/referrals/create_referral/${params.id}`)}}
-                        >
-                        Create Referral
-                    </button>
+                    <p className="text-md sm:text-xl mx-4">{JSON.stringify(Campaign)}</p>
+
                 </main>
             </div>
         </>
