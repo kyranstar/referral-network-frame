@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 // Also validate the frame url matches the expected url
                 let urlBuffer = validatedMessage?.data?.frameActionBody?.url || [];
                 const urlString = Buffer.from(urlBuffer).toString('utf-8');
-                if (validatedMessage && !urlString.startsWith(process.env['HOST'] || '')) {
+                if (validatedMessage && !urlString.startsWith(process.env.VERCEL_URL || '')) {
                     return res.status(400).send(`Invalid frame url: ${urlBuffer}`);
                 }
             } catch (e)  {
@@ -52,11 +52,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             if (!campaign) {
                 return res.status(400).send('Could not find Campaign ID');
             }
-            const imageUrl = `${process.env['HOST']}/api/images/referral_create?campaign_id=${campaign.id}&date=${Date.now()}${ fid > 0 ? `&fid=${fid}` : '' }`;
+            const imageUrl = `${process.env.VERCEL_URL}/api/images/referral_create?campaign_id=${campaign.id}&date=${Date.now()}${ fid > 0 ? `&fid=${fid}` : '' }`;
 
             if (fid <= 0 || buttonId <= 0) {
                 // Return an HTML response
-                let create_referral_url = `${process.env['HOST']}/api/referral_create?campaign_id=${campaign.id}`
+                let create_referral_url = `${process.env.VERCEL_URL}/api/referral_create?campaign_id=${campaign.id}`
                 res.setHeader('Content-Type', 'text/html');
                 res.status(200).send(`
                 <!DOCTYPE html>
@@ -90,7 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 }
                 await saveReferral(referral)
             }
-            let see_referral_url = `${process.env['HOST']}/referrals/${referral.id}`
+            let see_referral_url = `${process.env.VERCEL_URL}/referrals/${referral.id}`
 
             // Return an HTML response
             res.setHeader('Content-Type', 'text/html');

@@ -9,7 +9,7 @@ export default async function Page({params}: { params: {id: string}}) {
     const referral = await getReferral(params.id);
     const campaign = await getCampaign(referral.campaign_id);
 
-    let referralLink = `${process.env['HOST']}/api/refer?id=${referral.id}`
+    let referralLink = `${process.env.VERCEL_URL}/api/refer?id=${referral.id}`
 
     return(
         <>

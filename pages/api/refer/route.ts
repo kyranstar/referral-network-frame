@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 // Also validate the frame url matches the expected url
                 let urlBuffer = validatedMessage?.data?.frameActionBody?.url || [];
                 const urlString = Buffer.from(urlBuffer).toString('utf-8');
-                if (validatedMessage && !urlString.startsWith(process.env['HOST'] || '')) {
+                if (validatedMessage && !urlString.startsWith(process.env.VERCEL_URL || '')) {
                     return res.status(400).send(`Invalid frame url: ${urlBuffer}`);
                 }
             } catch (e)  {
@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const referral = await getReferral(referralId);
             const campaign = await getCampaign(referral.campaign_id)
 
-            const imageUrl = `${process.env['HOST']}/api/images/refer?id=${referralId}&date=${Date.now()}${ fid > 0 ? `&fid=${fid}` : '' }`;
+            const imageUrl = `${process.env.VERCEL_URL}/api/images/refer?id=${referralId}&date=${Date.now()}${ fid > 0 ? `&fid=${fid}` : '' }`;
 
             // Clicked create Campaign
             if (fid <= 0 || buttonId <= 0) {
@@ -65,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             <meta property="og:image" content="${imageUrl}">
             <meta name="fc:frame" content="vNext">
             <meta name="fc:frame:image" content="${imageUrl}">
-            <meta name="fc:frame:post_url" content="${process.env['HOST']}/api/vote?id=${campaign.id}">
+            <meta name="fc:frame:post_url" content="${process.env.VERCEL_URL}/api/vote?id=${campaign.id}">
             <meta name="fc:frame:button:1" content="${campaign.button_title}">
             <meta name="fc:frame:button:2" content="Visit Link">
             <meta name="fc:frame:button:2:action" content="link">
@@ -93,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <meta property="og:image" content="${imageUrl}">
           <meta name="fc:frame" content="vNext">
           <meta name="fc:frame:image" content="${imageUrl}">
-          <meta name="fc:frame:post_url" content="${process.env['HOST']}/api/vote">
+          <meta name="fc:frame:post_url" content="${process.env.VERCEL_URL}/api/vote">
           <meta name="fc:frame:button:1" content="${campaign.button_title}">
           <meta name="fc:frame:button:2" content="Visit Link">
           <meta name="fc:frame:button:2:action" content="link">

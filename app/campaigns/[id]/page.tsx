@@ -13,7 +13,7 @@ export default async function Page({params}: { params: {id: string}}) {
                     </h1>
                     <p className="text-md sm:text-xl mx-4">{JSON.stringify(Campaign)}</p>
                     <p> Share this link as a frame for others to create referral campaigns:
-                        {`${process.env['HOST']}/api/referral_create/?id=${params.id}`}
+                        {`${process.env.VERCEL_URL}/api/referral_create/?id=${params.id}`}
                     </p>
                 </main>
             </div>
